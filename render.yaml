@@ -11,6 +11,10 @@ services:
         value: production
       - key: ENABLE_DEMO_BOTS
         value: "false"
+      - key: ALLOWED_EMAIL_DOMAIN
+        value: bravesoft.co.jp
+      # Dashboard で設定: GOOGLE_CLIENT_ID, JWT_SECRET
+      # ビルド時: VITE_GOOGLE_CLIENT_ID (= GOOGLE_CLIENT_ID と同じ)
       # 別ドメインでフロントだけ配信する場合のみ設定
       # - key: ALLOWED_ORIGINS
       #   value: https://your-app.onrender.com

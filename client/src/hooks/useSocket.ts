@@ -3,17 +3,34 @@ import { io, Socket } from "socket.io-client";
 import type { User, UserStatus } from "../types";
 import { getServerUrl } from "../config";
 
-export function useSocket() {
+export function useSocket(sessionToken: string | null, enabled: boolean) {
   const socketRef = useRef<Socket | null>(null);
   const [connected, setConnected] = useState(false);
   const [me, setMe] = useState<User | null>(null);
   const [users, setUsers] = useState<User[]>([]);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   useEffect(() => {
-    const socket = io(getServerUrl(), { transports: ["websocket", "polling"] });
+    if (!enabled || !sessionToken) return;
+
+    const socket = io(getServerUrl(), {
+      transports: ["websocket", "polling"],
+      withCredentials: true,
+      auth: { token: sessionToken },
+    });
     socketRef.current = socket;
 
-    socket.on("connect", () => setConnected(true));
+    socket.on("connect", () => {
+      setConnected(true);
+      setAuthError(null);
+      socket.emit("join", {});
+    });
+
+    socket.on("connect_error", (err) => {
+      setAuthError(err.message);
+      setConnected(false);
+    });
+
     socket.on("disconnect", () => setConnected(false));
 
     socket.on("joined", (user: User) => {
@@ -38,12 +55,12 @@ export function useSocket() {
 
     return () => {
       socket.disconnect();
+      socketRef.current = null;
+      setMe(null);
+      setUsers([]);
+      setConnected(false);
     };
-  }, []);
-
-  const join = useCallback((name: string, color: string) => {
-    socketRef.current?.emit("join", { name, color });
-  }, []);
+  }, [enabled, sessionToken]);
 
   const move = useCallback((x: number, y: number) => {
     if (!me) return;
@@ -56,5 +73,5 @@ export function useSocket() {
     socketRef.current?.emit("status", status);
   }, []);
 
-  return { socket: socketRef, connected, me, users, join, move, setStatus };
+  return { socket: socketRef, connected, me, users, move, setStatus, authError };
 }

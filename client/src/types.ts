@@ -7,7 +7,15 @@ export interface User {
   x: number;
   y: number;
   status: UserStatus;
+  email?: string;
+  picture?: string;
   isBot?: boolean;
+}
+
+export interface AuthUser {
+  email: string;
+  name: string;
+  picture?: string;
 }
 
 export const MAP_WIDTH = 1200;

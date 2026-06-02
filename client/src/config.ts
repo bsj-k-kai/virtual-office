@@ -1,8 +1,8 @@
-/** Socket.io / API の接続先（本番は同一オリジン） */
+/** Socket.io / API の接続先（本番・開発とも同一オリジン推奨） */
 export function getServerUrl(): string {
   const envUrl = import.meta.env.VITE_SERVER_URL;
   if (envUrl) return envUrl;
-  if (import.meta.env.PROD && typeof window !== "undefined") {
+  if (typeof window !== "undefined") {
     return window.location.origin;
   }
   return "http://localhost:3001";

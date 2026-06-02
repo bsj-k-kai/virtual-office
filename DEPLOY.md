@@ -5,8 +5,35 @@
 ## 前提
 
 - **HTTPS 必須** — マイク・WebRTC はブラウザのセキュリティ上、HTTPS（または localhost）でのみ動作します
+- **Google ログイン必須** — `@bravesoft.co.jp` の Google Workspace アカウントのみ入室可能
 - **本番ではデモボットはオフ** — 実ユーザー同士の利用が前提です（`ENABLE_DEMO_BOTS=true` で再有効化可）
 - **音声が繋がらない場合** — 企業ネットワーク等では [TURN サーバー](#webrtc-turn-任意) の設定が必要なことがあります
+
+---
+
+## Google OAuth の設定（必須）
+
+1. [Google Cloud Console](https://console.cloud.google.com/apis/credentials) でプロジェクトを作成
+2. **OAuth 同意画面** — 社内アプリ（Internal）推奨、ユーザータイプは組織内
+3. **認証情報** → **OAuth 2.0 クライアント ID** → **ウェブアプリケーション**
+4. **承認済みの JavaScript 生成元** に以下を追加:
+   - `https://virtual-office-fydb.onrender.com`（本番 URL）
+   - `http://localhost:5173` / `http://localhost:5174`（ローカル開発）
+5. Render（またはサーバー）の環境変数:
+
+| 変数 | 説明 |
+|------|------|
+| `GOOGLE_CLIENT_ID` | OAuth クライアント ID（`*.apps.googleusercontent.com`） |
+| `JWT_SECRET` | セッション署名用のランダム文字列（32文字以上推奨） |
+| `ALLOWED_EMAIL_DOMAIN` | `bravesoft.co.jp`（デフォルト） |
+
+ローカル開発では `server/.env` またはプロジェクトルートの `.env` を `tsx` が読むようにはしていないため、起動前に export するか `dotenv` を追加してください。簡易的に:
+
+```bash
+export GOOGLE_CLIENT_ID="your-client-id.apps.googleusercontent.com"
+export JWT_SECRET="local-dev-secret"
+npm run dev
+```
 
 ---
 

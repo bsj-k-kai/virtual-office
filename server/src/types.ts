@@ -7,5 +7,7 @@ export interface UserState {
   x: number;
   y: number;
   status: UserStatus;
+  email?: string;
+  picture?: string;
   isBot?: boolean;
 }
