@@ -1,0 +1,16 @@
+# Render.com ワンクリックデプロイ
+# https://render.com → New → Blueprint → このリポジトリを接続
+services:
+  - type: web
+    name: virtual-office
+    runtime: docker
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: ENABLE_DEMO_BOTS
+        value: "false"
+      # 別ドメインでフロントだけ配信する場合のみ設定
+      # - key: ALLOWED_ORIGINS
+      #   value: https://your-app.onrender.com

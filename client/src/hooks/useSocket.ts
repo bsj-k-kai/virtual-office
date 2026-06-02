@@ -1,0 +1,60 @@
+import { useEffect, useRef, useState, useCallback } from "react";
+import { io, Socket } from "socket.io-client";
+import type { User, UserStatus } from "../types";
+import { getServerUrl } from "../config";
+
+export function useSocket() {
+  const socketRef = useRef<Socket | null>(null);
+  const [connected, setConnected] = useState(false);
+  const [me, setMe] = useState<User | null>(null);
+  const [users, setUsers] = useState<User[]>([]);
+
+  useEffect(() => {
+    const socket = io(getServerUrl(), { transports: ["websocket", "polling"] });
+    socketRef.current = socket;
+
+    socket.on("connect", () => setConnected(true));
+    socket.on("disconnect", () => setConnected(false));
+
+    socket.on("joined", (user: User) => {
+      setMe(user);
+    });
+
+    socket.on("users", (list: User[]) => {
+      setUsers(list);
+    });
+
+    socket.on("user-moved", ({ id, x, y }: { id: string; x: number; y: number }) => {
+      setUsers((prev) => prev.map((u) => (u.id === id ? { ...u, x, y } : u)));
+    });
+
+    socket.on("user-status", ({ id, status }: { id: string; status: UserStatus }) => {
+      setUsers((prev) => prev.map((u) => (u.id === id ? { ...u, status } : u)));
+    });
+
+    socket.on("user-left", (id: string) => {
+      setUsers((prev) => prev.filter((u) => u.id !== id));
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, []);
+
+  const join = useCallback((name: string, color: string) => {
+    socketRef.current?.emit("join", { name, color });
+  }, []);
+
+  const move = useCallback((x: number, y: number) => {
+    if (!me) return;
+    setMe((prev) => (prev ? { ...prev, x, y } : prev));
+    socketRef.current?.emit("move", { x, y });
+  }, [me]);
+
+  const setStatus = useCallback((status: UserStatus) => {
+    setMe((prev) => (prev ? { ...prev, status } : prev));
+    socketRef.current?.emit("status", status);
+  }, []);
+
+  return { socket: socketRef, connected, me, users, join, move, setStatus };
+}
