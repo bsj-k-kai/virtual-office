@@ -17,6 +17,11 @@ import {
   colorFromEmail,
   type AuthUser,
 } from "./auth.js";
+import {
+  fetchTodaySchedule,
+  verifyAccessTokenEmail,
+  type ScheduleInfo,
+} from "./calendar.js";
 
 export type { UserState, UserStatus } from "./types.js";
 
@@ -176,6 +181,34 @@ io.on("connection", (socket) => {
   socket.on("signal", (payload: { to: string; signal: unknown }) => {
     if (isBotId(payload.to)) return;
     io.to(payload.to).emit("signal", { from: socket.id, signal: payload.signal });
+  });
+
+  socket.on("calendar-sync", async (payload: { accessToken?: string }) => {
+    const user = users.get(socket.id);
+    if (!user || user.isBot) return;
+
+    const accessToken = payload?.accessToken;
+    if (!accessToken || typeof accessToken !== "string") {
+      socket.emit("calendar-sync-error", { message: "アクセストークンがありません" });
+      return;
+    }
+
+    try {
+      const emailOk = await verifyAccessTokenEmail(accessToken, authUser.email);
+      if (!emailOk) {
+        socket.emit("calendar-sync-error", { message: "カレンダーアカウントが一致しません" });
+        return;
+      }
+
+      const schedule: ScheduleInfo | null = await fetchTodaySchedule(accessToken);
+      user.schedule = schedule;
+      users.set(socket.id, user);
+      socket.emit("calendar-sync-ok", { schedule });
+      io.emit("user-schedule", { id: socket.id, schedule });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "カレンダーの取得に失敗しました";
+      socket.emit("calendar-sync-error", { message });
+    }
   });
 
   socket.on("disconnect", () => {

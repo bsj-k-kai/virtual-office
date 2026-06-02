@@ -52,6 +52,7 @@ export function LoginScreen({ allowedDomain, loading, error, onLogin }: LoginScr
           <li>会社の Google（Gmail）アカウントが必要です</li>
           <li>個人の Gmail ではログインできません</li>
           <li>ログイン後、2D オフィスで同僚と音声チャット</li>
+          <li>カレンダー連携で今日の予定を吹き出しに表示</li>
         </ul>
       </div>
     </div>

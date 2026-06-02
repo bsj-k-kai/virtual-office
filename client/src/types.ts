@@ -1,5 +1,11 @@
 export type UserStatus = "available" | "busy" | "away";
 
+export interface ScheduleInfo {
+  label: string;
+  detail?: string;
+  kind: "now" | "next";
+}
+
 export interface User {
   id: string;
   name: string;
@@ -9,6 +15,7 @@ export interface User {
   status: UserStatus;
   email?: string;
   picture?: string;
+  schedule?: ScheduleInfo | null;
   isBot?: boolean;
 }
 

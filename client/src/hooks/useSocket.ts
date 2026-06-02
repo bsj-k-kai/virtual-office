@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { io, Socket } from "socket.io-client";
-import type { User, UserStatus } from "../types";
+import type { User, UserStatus, ScheduleInfo } from "../types";
 import { getServerUrl } from "../config";
 
 export function useSocket(sessionToken: string | null, enabled: boolean) {
@@ -51,6 +51,11 @@ export function useSocket(sessionToken: string | null, enabled: boolean) {
 
     socket.on("user-left", (id: string) => {
       setUsers((prev) => prev.filter((u) => u.id !== id));
+    });
+
+    socket.on("user-schedule", ({ id, schedule }: { id: string; schedule: ScheduleInfo | null }) => {
+      setUsers((prev) => prev.map((u) => (u.id === id ? { ...u, schedule } : u)));
+      setMe((prev) => (prev?.id === id ? { ...prev, schedule } : prev));
     });
 
     return () => {

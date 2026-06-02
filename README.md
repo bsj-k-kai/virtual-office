@@ -8,6 +8,7 @@
 - **リアルタイム同期** — 複数人が同時に入室し、位置が即時反映
 - **近接音声** — 一定距離内に近づくと WebRTC で音声が自動接続（Gather 風）
 - **ステータス** — 「対応可」「取り込み中」「離席中」（取り込み中は話しかけ不可）
+- **Google カレンダー連携** — 今日の予定をアバター上の吹き出しに表示（進行中 / 次の予定）
 
 ## 技術スタック
 
@@ -16,6 +17,12 @@
 | フロント | React + TypeScript + Vite |
 | リアルタイム | Socket.io |
 | 音声 | WebRTC (P2P) + STUN |
+
+## ログイン
+
+**@bravesoft.co.jp** の Google アカウントが必須です。
+
+Google Cloud のプロジェクトがまだない場合 → **[docs/GOOGLE_OAUTH_SETUP.md](./docs/GOOGLE_OAUTH_SETUP.md)**（作成手順）
 
 ## 本番デプロイ
 

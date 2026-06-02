@@ -1,5 +1,5 @@
-import { useEffect, useRef, useCallback, useState } from "react";
-import type { User, UserStatus } from "../types";
+import { useEffect, useRef, useCallback, useState, useId } from "react";
+import type { User, UserStatus, ScheduleInfo } from "../types";
 import {
   MAP_WIDTH,
   MAP_HEIGHT,
@@ -23,6 +23,9 @@ interface OfficeMapProps {
   onMicVolumeChange: (value: number) => void;
   onMove: (x: number, y: number) => void;
   onStatusChange: (status: UserStatus) => void;
+  calendarError?: string | null;
+  calendarLinked?: boolean;
+  onCalendarSync?: () => void;
 }
 
 const DESKS = [
@@ -52,6 +55,9 @@ export function OfficeMap({
   onMicVolumeChange,
   onMove,
   onStatusChange,
+  calendarError,
+  calendarLinked,
+  onCalendarSync,
 }: OfficeMapProps) {
   const [localPos, setLocalPos] = useState({ x: me.x, y: me.y });
   const posRef = useRef({ x: me.x, y: me.y });
@@ -130,7 +136,7 @@ export function OfficeMap({
         <ul className="member-list">
           {users.map((u) => (
             <li key={u.id} className={u.id === me.id ? "me" : ""}>
-              <span className="dot" style={{ background: u.color }} />
+              <MemberIcon user={u} />
               <span className="member-name">
                 {u.name}
                 {u.id === me.id ? " (あなた)" : ""}
@@ -142,6 +148,31 @@ export function OfficeMap({
         </ul>
 
         <MicVolumeControl value={micVolume} onChange={onMicVolumeChange} />
+
+        {onCalendarSync && (
+          <div className="calendar-panel">
+            <h3>📅 今日の予定</h3>
+            {me.schedule ? (
+              <p className="calendar-preview">
+                <span className={`calendar-kind calendar-kind-${me.schedule.kind}`}>
+                  {me.schedule.kind === "now" ? "進行中" : "次の予定"}
+                </span>
+                {me.schedule.label}
+                {me.schedule.detail && (
+                  <span className="calendar-detail">{me.schedule.detail}</span>
+                )}
+              </p>
+            ) : calendarLinked ? (
+              <p className="calendar-empty">本日の予定はありません</p>
+            ) : (
+              <p className="calendar-empty">カレンダーと連携すると吹き出しに表示されます</p>
+            )}
+            {calendarError && <p className="calendar-error">{calendarError}</p>}
+            <button type="button" className="calendar-sync-btn" onClick={onCalendarSync}>
+              {calendarLinked ? "カレンダーを再取得" : "カレンダーを連携"}
+            </button>
+          </div>
+        )}
 
         <div className="status-control">
           <h3>あなたのステータス</h3>
@@ -252,13 +283,84 @@ export function OfficeMap({
   );
 }
 
+function ScheduleBubbleView({ schedule, avatarR }: { schedule: ScheduleInfo; avatarR: number }) {
+  const w = 148;
+  const h = schedule.detail ? 42 : 30;
+  const top = -(avatarR + h + 12);
+  const stroke = schedule.kind === "now" ? "#6366f1" : "#cbd5e1";
+
+  return (
+    <g transform={`translate(0, ${top})`} pointerEvents="none">
+      <rect
+        x={-w / 2}
+        y={-h}
+        width={w}
+        height={h}
+        rx={10}
+        fill="#ffffff"
+        stroke={stroke}
+        strokeWidth={schedule.kind === "now" ? 2 : 1.5}
+      />
+      <text
+        y={schedule.detail ? -24 : -17}
+        textAnchor="middle"
+        fontSize="11"
+        fontWeight="600"
+        fill="#1e293b"
+      >
+        {schedule.label}
+      </text>
+      {schedule.detail && (
+        <text y={-10} textAnchor="middle" fontSize="9" fill="#64748b">
+          {schedule.detail}
+        </text>
+      )}
+      <path
+        d={`M -7 ${-2} L 0 8 L 7 ${-2} Z`}
+        fill="#ffffff"
+        stroke={stroke}
+        strokeWidth={1.5}
+        strokeLinejoin="round"
+      />
+    </g>
+  );
+}
+
+function MemberIcon({ user }: { user: User }) {
+  const [imgFailed, setImgFailed] = useState(false);
+  if (user.picture && !user.isBot && !imgFailed) {
+    return (
+      <img
+        src={user.picture}
+        alt=""
+        className="member-avatar"
+        onError={() => setImgFailed(true)}
+      />
+    );
+  }
+  return <span className="dot" style={{ background: user.color }} />;
+}
+
 function Avatar({ user, isMe, isNearby }: { user: User; isMe?: boolean; isNearby?: boolean }) {
   const r = AVATAR_SIZE / 2;
+  const clipId = useId().replace(/:/g, "");
+  const [imgFailed, setImgFailed] = useState(false);
+  const showPicture = Boolean(user.picture && !user.isBot && !imgFailed);
   const statusRing =
     user.status === "available" ? "#22c55e" : user.status === "busy" ? "#ef4444" : "#94a3b8";
+  const stroke = isMe ? "#1e293b" : "#fff";
+  const strokeWidth = isMe ? 3 : 2;
 
   return (
     <g transform={`translate(${user.x}, ${user.y})`}>
+      {showPicture && (
+        <defs>
+          <clipPath id={clipId}>
+            <circle r={r} />
+          </clipPath>
+        </defs>
+      )}
+      {user.schedule && <ScheduleBubbleView schedule={user.schedule} avatarR={r} />}
       {isNearby && (
         <circle r={r + 8} fill="none" stroke="#6366f1" strokeWidth="3" opacity="0.8">
           <animate attributeName="r" values={`${r + 6};${r + 12};${r + 6}`} dur="1.5s" repeatCount="indefinite" />
@@ -266,10 +368,28 @@ function Avatar({ user, isMe, isNearby }: { user: User; isMe?: boolean; isNearby
         </circle>
       )}
       <circle r={r + 3} fill={statusRing} opacity="0.9" />
-      <circle r={r} fill={user.color} stroke={isMe ? "#1e293b" : "#fff"} strokeWidth={isMe ? 3 : 2} />
-      <text y={5} textAnchor="middle" fontSize="14" fill="#fff" fontWeight="600">
-        {user.name.charAt(0).toUpperCase()}
-      </text>
+      {showPicture ? (
+        <>
+          <image
+            href={user.picture}
+            x={-r}
+            y={-r}
+            width={r * 2}
+            height={r * 2}
+            clipPath={`url(#${clipId})`}
+            preserveAspectRatio="xMidYMid slice"
+            onError={() => setImgFailed(true)}
+          />
+          <circle r={r} fill="none" stroke={stroke} strokeWidth={strokeWidth} />
+        </>
+      ) : (
+        <>
+          <circle r={r} fill={user.color} stroke={stroke} strokeWidth={strokeWidth} />
+          <text y={5} textAnchor="middle" fontSize="14" fill="#fff" fontWeight="600">
+            {user.name.charAt(0).toUpperCase()}
+          </text>
+        </>
+      )}
       <text y={r + 18} textAnchor="middle" fontSize="12" fill="#1e293b" fontWeight="500">
         {user.name}{isMe ? " (あなた)" : ""}{user.isBot ? " 🤖" : ""}
       </text>

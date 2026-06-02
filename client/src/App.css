@@ -39,12 +39,23 @@ body {
 }
 
 .header-user {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
   font-size: 0.85rem;
   color: #cbd5e1;
-  max-width: 160px;
+  max-width: 200px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.header-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
 }
 
 .logout-btn {
@@ -246,6 +257,14 @@ body {
   flex-shrink: 0;
 }
 
+.member-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
 .member-name {
   flex: 1;
   overflow: hidden;
@@ -273,6 +292,81 @@ body {
 .status-away {
   background: #f1f5f9;
   color: #64748b;
+}
+
+.calendar-panel {
+  margin: 1rem 0;
+  padding: 0.75rem;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.calendar-panel h3 {
+  font-size: 0.85rem;
+  color: #475569;
+  margin: 0 0 0.5rem;
+}
+
+.calendar-preview {
+  font-size: 0.8rem;
+  color: #1e293b;
+  margin: 0 0 0.5rem;
+  line-height: 1.4;
+}
+
+.calendar-kind {
+  display: inline-block;
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+  margin-right: 0.35rem;
+  vertical-align: middle;
+}
+
+.calendar-kind-now {
+  background: #e0e7ff;
+  color: #4338ca;
+}
+
+.calendar-kind-next {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.calendar-detail {
+  display: block;
+  font-size: 0.75rem;
+  color: #64748b;
+  margin-top: 0.2rem;
+}
+
+.calendar-empty {
+  font-size: 0.8rem;
+  color: #64748b;
+  margin: 0 0 0.5rem;
+}
+
+.calendar-error {
+  font-size: 0.75rem;
+  color: #dc2626;
+  margin: 0 0 0.5rem;
+}
+
+.calendar-sync-btn {
+  width: 100%;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.8rem;
+  border: 1px solid #c7d2fe;
+  border-radius: 6px;
+  background: #fff;
+  color: #4338ca;
+  cursor: pointer;
+}
+
+.calendar-sync-btn:hover {
+  background: #eef2ff;
 }
 
 .mic-volume-control {

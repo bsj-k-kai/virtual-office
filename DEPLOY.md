@@ -13,8 +13,12 @@
 
 ## Google OAuth の設定（必須）
 
-1. [Google Cloud Console](https://console.cloud.google.com/apis/credentials) でプロジェクトを作成
-2. **OAuth 同意画面** — 社内アプリ（Internal）推奨、ユーザータイプは組織内
+**プロジェクトがまだない場合** → 画面付きの詳細手順: **[docs/GOOGLE_OAUTH_SETUP.md](./docs/GOOGLE_OAUTH_SETUP.md)**
+
+概要:
+
+1. [Google Cloud Console](https://console.cloud.google.com/) → **新しいプロジェクト** を作成
+2. **OAuth 同意画面** — 社内アプリ（Internal）推奨
 3. **認証情報** → **OAuth 2.0 クライアント ID** → **ウェブアプリケーション**
 4. **承認済みの JavaScript 生成元** に以下を追加:
    - `https://virtual-office-fydb.onrender.com`（本番 URL）

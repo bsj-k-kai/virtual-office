@@ -5,6 +5,7 @@ import { useDemoBotAudio } from "./hooks/useDemoBotAudio";
 import { useMyPositionRef } from "./hooks/useMyPositionRef";
 import { useMicVolume } from "./hooks/useMicVolume";
 import { useAuth } from "./hooks/useAuth";
+import { useCalendarSync } from "./hooks/useCalendarSync";
 import { LoginScreen } from "./components/LoginScreen";
 import { OfficeMap } from "./components/OfficeMap";
 import "./App.css";
@@ -21,6 +22,11 @@ function OfficeApp({
   const { socket, connected, me, users, move, setStatus, authError } = useSocket(
     sessionToken,
     true
+  );
+  const { calendarError, calendarLinked, syncCalendar } = useCalendarSync(
+    socket,
+    connected && !!me,
+    me?.isBot
   );
   const myPosRef = useMyPositionRef(me);
   const { micVolume, setMicVolume } = useMicVolume();
@@ -45,6 +51,9 @@ function OfficeApp({
         <span className="header-title">🏢 バーチャルオフィス</span>
         <div className="header-right">
           <span className="header-user" title={userEmail}>
+            {me.picture && (
+              <img src={me.picture} alt="" className="header-avatar" />
+            )}
             {me.name}
           </span>
           <button type="button" className="logout-btn" onClick={onLogout}>
@@ -65,6 +74,9 @@ function OfficeApp({
         onMicVolumeChange={setMicVolume}
         onMove={move}
         onStatusChange={setStatus}
+        calendarError={calendarError}
+        calendarLinked={calendarLinked}
+        onCalendarSync={() => syncCalendar(true)}
       />
     </div>
   );
