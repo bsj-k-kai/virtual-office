@@ -46,8 +46,10 @@ export class DemoMusicPlayer {
 
   setVolume(volume: number) {
     const now = this.ctx.currentTime;
+    const target = Math.min(0.85, Math.max(0, volume));
     this.gain.gain.cancelScheduledValues(now);
-    this.gain.gain.setValueAtTime(Math.min(0.5, volume), now);
+    this.gain.gain.setValueAtTime(this.gain.gain.value, now);
+    this.gain.gain.linearRampToValueAtTime(target, now + 0.06);
   }
 
   dispose() {

@@ -3,32 +3,51 @@ import type { Socket } from "socket.io-client";
 import type { User } from "../types";
 import { PROXIMITY_RADIUS } from "../types";
 import { getIceServers } from "../config";
-
-function distance(a: { x: number; y: number }, b: { x: number; y: number }) {
-  return Math.hypot(a.x - b.x, a.y - b.y);
-}
+import { distanceBetween, volumeFromDistance } from "../audio/spatialVolume";
+import { MicPipeline } from "../audio/micPipeline";
 
 export function useWebRTC(
   socketRef: React.RefObject<Socket | null>,
   me: User | null,
-  users: User[]
+  users: User[],
+  myPosRef: React.RefObject<{ x: number; y: number }>,
+  micVolume: number
 ) {
   const peersRef = useRef<Map<string, RTCPeerConnection>>(new Map());
-  const localStreamRef = useRef<MediaStream | null>(null);
+  const micPipelineRef = useRef<MicPipeline | null>(null);
   const audioElsRef = useRef<Map<string, HTMLAudioElement>>(new Map());
+  const usersRef = useRef(users);
   const [nearbyIds, setNearbyIds] = useState<string[]>([]);
 
-  const initStream = useCallback(async () => {
-    if (localStreamRef.current) return localStreamRef.current;
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-      localStreamRef.current = stream;
-      return stream;
-    } catch {
-      console.warn("マイクへのアクセスが拒否されました");
-      return null;
+  usersRef.current = users;
+
+  const applySpatialVolumes = useCallback(() => {
+    const myPos = myPosRef.current;
+    const list = usersRef.current;
+    for (const [id, audio] of audioElsRef.current) {
+      const user = list.find((u) => u.id === id);
+      if (!user) continue;
+      const dist = distanceBetween(myPos, user);
+      audio.volume = volumeFromDistance(dist);
     }
+  }, [myPosRef]);
+
+  const initStream = useCallback(async () => {
+    if (!micPipelineRef.current) {
+      micPipelineRef.current = new MicPipeline();
+    }
+    const stream = await micPipelineRef.current.init();
+    return stream;
   }, []);
+
+  useEffect(() => {
+    if (!me) return;
+    initStream();
+  }, [me, initStream]);
+
+  useEffect(() => {
+    micPipelineRef.current?.setOutputSlider(micVolume);
+  }, [micVolume]);
 
   const createPeer = useCallback(
     async (remoteId: string, initiator: boolean) => {
@@ -50,6 +69,7 @@ export function useWebRTC(
           document.body.appendChild(audio);
         }
         audio.srcObject = event.streams[0];
+        applySpatialVolumes();
       };
 
       pc.onicecandidate = (event) => {
@@ -72,7 +92,7 @@ export function useWebRTC(
         });
       }
     },
-    [initStream, socketRef]
+    [initStream, socketRef, applySpatialVolumes]
   );
 
   const removePeer = useCallback((remoteId: string) => {
@@ -132,7 +152,7 @@ export function useWebRTC(
           u.id !== me.id &&
           !u.isBot &&
           u.status !== "busy" &&
-          distance(me, u) < PROXIMITY_RADIUS
+          distanceBetween(myPosRef.current, u) < PROXIMITY_RADIUS
       )
       .map((u) => u.id);
 
@@ -153,12 +173,24 @@ export function useWebRTC(
         removePeer(id);
       }
     }
-  }, [me, users, createPeer, removePeer]);
+  }, [me, users, createPeer, removePeer, myPosRef]);
+
+  useEffect(() => {
+    if (!me) return;
+    let rafId = 0;
+    const tick = () => {
+      applySpatialVolumes();
+      rafId = requestAnimationFrame(tick);
+    };
+    rafId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafId);
+  }, [me, applySpatialVolumes]);
 
   useEffect(() => {
     return () => {
       peersRef.current.forEach((_, id) => removePeer(id));
-      localStreamRef.current?.getTracks().forEach((t) => t.stop());
+      micPipelineRef.current?.dispose();
+      micPipelineRef.current = null;
     };
   }, [removePeer]);
 

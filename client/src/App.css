@@ -226,6 +226,83 @@ body {
   color: #64748b;
 }
 
+.mic-volume-control {
+  margin: 1rem 0;
+  padding: 0.75rem;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+
+.mic-volume-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.35rem;
+}
+
+.mic-volume-header h3 {
+  font-size: 0.85rem;
+  color: #475569;
+  margin: 0;
+}
+
+.mic-volume-value {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #6366f1;
+}
+
+.mic-volume-desc {
+  font-size: 0.72rem;
+  color: #94a3b8;
+  line-height: 1.4;
+  margin-bottom: 0.6rem;
+}
+
+.mic-volume-slider {
+  width: 100%;
+  height: 6px;
+  appearance: none;
+  border-radius: 3px;
+  background: linear-gradient(
+    to right,
+    #c7d2fe 0%,
+    #c7d2fe var(--mic-fill),
+    #e2e8f0 var(--mic-fill),
+    #e2e8f0 100%
+  );
+  outline: none;
+  cursor: pointer;
+}
+
+.mic-volume-slider::-webkit-slider-thumb {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #6366f1;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+}
+
+.mic-volume-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.7rem;
+  color: #94a3b8;
+  margin-top: 0.35rem;
+  position: relative;
+}
+
+.mic-mid-mark {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #6366f1;
+  font-weight: 600;
+}
+
 .status-control {
   display: flex;
   flex-direction: column;

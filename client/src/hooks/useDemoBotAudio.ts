@@ -2,37 +2,47 @@ import { useEffect, useRef, useState } from "react";
 import type { User } from "../types";
 import { PROXIMITY_RADIUS } from "../types";
 import { DemoMusicPlayer, getAudioContext, botIndexFromId } from "../audio/demoMusic";
+import {
+  distanceBetween,
+  demoMusicVolumeFromDistance,
+} from "../audio/spatialVolume";
 
-function distance(a: { x: number; y: number }, b: { x: number; y: number }) {
-  return Math.hypot(a.x - b.x, a.y - b.y);
-}
-
-export function useDemoBotAudio(me: User | null, users: User[]) {
+export function useDemoBotAudio(
+  me: User | null,
+  users: User[],
+  myPosRef: React.RefObject<{ x: number; y: number }>
+) {
   const playersRef = useRef<Map<string, DemoMusicPlayer>>(new Map());
+  const usersRef = useRef(users);
   const [playingBotIds, setPlayingBotIds] = useState<string[]>([]);
+
+  usersRef.current = users;
 
   useEffect(() => {
     if (!me) return;
 
     let cancelled = false;
+    let rafId = 0;
 
     const sync = async () => {
       const ctx = await getAudioContext();
       if (cancelled) return;
 
-      const inRange = users.filter(
+      const myPos = myPosRef.current;
+      const list = usersRef.current;
+      const inRange = list.filter(
         (u) =>
           u.isBot &&
           u.status !== "busy" &&
-          distance(me, u) < PROXIMITY_RADIUS
+          distanceBetween(myPos, u) < PROXIMITY_RADIUS
       );
 
       const inRangeIds = new Set(inRange.map((u) => u.id));
       const currentIds = new Set(playersRef.current.keys());
 
       for (const bot of inRange) {
-        const dist = distance(me, bot);
-        const volume = 0.15 + 0.35 * (1 - dist / PROXIMITY_RADIUS);
+        const dist = distanceBetween(myPos, bot);
+        const volume = demoMusicVolumeFromDistance(dist);
 
         let player = playersRef.current.get(bot.id);
         if (!player) {
@@ -51,14 +61,23 @@ export function useDemoBotAudio(me: User | null, users: User[]) {
         }
       }
 
-      setPlayingBotIds(inRange.map((u) => u.id));
+      const ids = inRange.map((u) => u.id);
+      setPlayingBotIds((prev) =>
+        prev.length === ids.length && prev.every((id, i) => id === ids[i]) ? prev : ids
+      );
     };
 
-    sync();
+    const tick = () => {
+      sync();
+      rafId = requestAnimationFrame(tick);
+    };
+
+    rafId = requestAnimationFrame(tick);
     return () => {
       cancelled = true;
+      cancelAnimationFrame(rafId);
     };
-  }, [me, users]);
+  }, [me, myPosRef]);
 
   useEffect(() => {
     return () => {

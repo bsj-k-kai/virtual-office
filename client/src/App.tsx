@@ -1,14 +1,18 @@
 import { useSocket } from "./hooks/useSocket";
 import { useWebRTC } from "./hooks/useWebRTC";
 import { useDemoBotAudio } from "./hooks/useDemoBotAudio";
+import { useMyPositionRef } from "./hooks/useMyPositionRef";
+import { useMicVolume } from "./hooks/useMicVolume";
 import { Lobby } from "./components/Lobby";
 import { OfficeMap } from "./components/OfficeMap";
 import "./App.css";
 
 function App() {
   const { socket, connected, me, users, join, move, setStatus } = useSocket();
-  const { nearbyIds } = useWebRTC(socket, me, users);
-  const { playingBotIds } = useDemoBotAudio(me, users);
+  const myPosRef = useMyPositionRef(me);
+  const { micVolume, setMicVolume } = useMicVolume();
+  const { nearbyIds } = useWebRTC(socket, me, users, myPosRef, micVolume);
+  const { playingBotIds } = useDemoBotAudio(me, users, myPosRef);
 
   if (!me) {
     return <Lobby connected={connected} onJoin={join} />;
@@ -27,6 +31,9 @@ function App() {
         users={users}
         nearbyIds={nearbyIds}
         playingBotIds={playingBotIds}
+        myPosRef={myPosRef}
+        micVolume={micVolume}
+        onMicVolumeChange={setMicVolume}
         onMove={move}
         onStatusChange={setStatus}
       />

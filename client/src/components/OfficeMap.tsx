@@ -7,6 +7,7 @@ import {
   AVATAR_SIZE,
   STATUS_LABELS,
 } from "../types";
+import { MicVolumeControl } from "./MicVolumeControl";
 
 function distance(a: { x: number; y: number }, b: { x: number; y: number }) {
   return Math.hypot(a.x - b.x, a.y - b.y);
@@ -17,6 +18,9 @@ interface OfficeMapProps {
   users: User[];
   nearbyIds: string[];
   playingBotIds: string[];
+  myPosRef: React.RefObject<{ x: number; y: number }>;
+  micVolume: number;
+  onMicVolumeChange: (value: number) => void;
   onMove: (x: number, y: number) => void;
   onStatusChange: (status: UserStatus) => void;
 }
@@ -38,7 +42,17 @@ const LOUNGE = { x: 80, y: 520, w: 280, h: 200, label: "ラウンジ" };
 const SPEED = 4;
 const KEYS = new Set(["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "w", "a", "s", "d", "W", "A", "S", "D"]);
 
-export function OfficeMap({ me, users, nearbyIds, playingBotIds, onMove, onStatusChange }: OfficeMapProps) {
+export function OfficeMap({
+  me,
+  users,
+  nearbyIds,
+  playingBotIds,
+  myPosRef,
+  micVolume,
+  onMicVolumeChange,
+  onMove,
+  onStatusChange,
+}: OfficeMapProps) {
   const [localPos, setLocalPos] = useState({ x: me.x, y: me.y });
   const posRef = useRef({ x: me.x, y: me.y });
   const keysRef = useRef<Set<string>>(new Set());
@@ -72,8 +86,11 @@ export function OfficeMap({ me, users, nearbyIds, playingBotIds, onMove, onStatu
       }
     }
 
+    myPosRef.current.x = posRef.current.x;
+    myPosRef.current.y = posRef.current.y;
+
     rafRef.current = requestAnimationFrame(tick);
-  }, [onMove]);
+  }, [onMove, myPosRef]);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -123,6 +140,8 @@ export function OfficeMap({ me, users, nearbyIds, playingBotIds, onMove, onStatu
             </li>
           ))}
         </ul>
+
+        <MicVolumeControl value={micVolume} onChange={onMicVolumeChange} />
 
         <div className="status-control">
           <h3>あなたのステータス</h3>
@@ -226,7 +245,7 @@ export function OfficeMap({ me, users, nearbyIds, playingBotIds, onMove, onStatu
         </svg>
 
         <div className="map-hint">
-          矢印キー / WASD で移動 · 青い円の範囲内で音声が接続されます
+          矢印キー / WASD で移動 · 近いほど大きく、遠いほど小さく聞こえます
         </div>
       </div>
     </div>
