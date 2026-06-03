@@ -1,7 +1,7 @@
 export interface ScheduleInfo {
   label: string;
   detail?: string;
-  kind: "now" | "next";
+  kind: "now";
 }
 
 interface GCalEvent {
@@ -10,8 +10,20 @@ interface GCalEvent {
   end?: { dateTime?: string; date?: string };
 }
 
-interface GCalListResponse {
+interface GCalEventsResponse {
   items?: GCalEvent[];
+  error?: { message?: string };
+}
+
+interface GCalCalendarEntry {
+  id?: string;
+  summary?: string;
+  primary?: boolean;
+  selected?: boolean;
+}
+
+interface GCalCalendarListResponse {
+  items?: GCalCalendarEntry[];
   error?: { message?: string };
 }
 
@@ -51,7 +63,8 @@ function eventBounds(event: GCalEvent): { start: Date; end: Date; allDay: boolea
   return null;
 }
 
-export function pickScheduleBubble(events: GCalEvent[], now = new Date()): ScheduleInfo | null {
+/** いま進行中の予定のみ（次の予定は表示しない） */
+export function pickCurrentEvent(events: GCalEvent[], now = new Date()): ScheduleInfo | null {
   const nowMs = now.getTime();
   const parsed = events
     .map((e) => {
@@ -75,17 +88,7 @@ export function pickScheduleBubble(events: GCalEvent[], now = new Date()): Sched
     }
   }
 
-  const next = parsed.find((e) => e.start.getTime() > nowMs);
-  if (!next) return null;
-
-  const detail = next.allDay
-    ? "終日"
-    : `${formatTimeJa(next.start.toISOString())} から`;
-  return {
-    label: truncate(next.summary, 22),
-    detail: `次: ${detail}`,
-    kind: "next",
-  };
+  return null;
 }
 
 export async function verifyAccessTokenEmail(
@@ -100,6 +103,56 @@ export async function verifyAccessTokenEmail(
   return data.email?.toLowerCase() === expectedEmail.toLowerCase();
 }
 
+async function gcalFetch<T>(accessToken: string, path: string, params?: URLSearchParams): Promise<T> {
+  const url = new URL(`https://www.googleapis.com/calendar/v3/${path}`);
+  if (params) {
+    for (const [k, v] of params) url.searchParams.set(k, v);
+  }
+  const res = await fetch(url.toString(), {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  const data = (await res.json()) as T & { error?: { message?: string } };
+  if (!res.ok) {
+    const msg = data.error?.message || `Calendar API error (${res.status})`;
+    throw new Error(msg);
+  }
+  return data;
+}
+
+/** 勤務用 primary 以外で、Google カレンダーに表示オンのカレンダー */
+async function listPersonalCalendars(accessToken: string): Promise<GCalCalendarEntry[]> {
+  const data = await gcalFetch<GCalCalendarListResponse>(accessToken, "users/me/calendarList", new URLSearchParams({
+    minAccessRole: "reader",
+  }));
+
+  return (data.items ?? []).filter((c) => c.id && c.selected && !c.primary);
+}
+
+async function fetchEventsForDay(
+  accessToken: string,
+  calendarId: string,
+  timeMin: Date,
+  timeMax: Date
+): Promise<GCalEvent[]> {
+  const params = new URLSearchParams({
+    timeMin: timeMin.toISOString(),
+    timeMax: timeMax.toISOString(),
+    singleEvents: "true",
+    orderBy: "startTime",
+    maxResults: "25",
+  });
+
+  const data = await gcalFetch<GCalEventsResponse>(
+    accessToken,
+    `calendars/${encodeURIComponent(calendarId)}/events`,
+    params
+  );
+  return data.items ?? [];
+}
+
+/**
+ * 勤務先（primary）カレンダーを除き、いま参加中の予定だけを返す。
+ */
 export async function fetchTodaySchedule(accessToken: string): Promise<ScheduleInfo | null> {
   const now = new Date();
   const startOfDay = new Date(now);
@@ -107,22 +160,15 @@ export async function fetchTodaySchedule(accessToken: string): Promise<ScheduleI
   const endOfDay = new Date(now);
   endOfDay.setHours(23, 59, 59, 999);
 
-  const url = new URL("https://www.googleapis.com/calendar/v3/calendars/primary/events");
-  url.searchParams.set("timeMin", startOfDay.toISOString());
-  url.searchParams.set("timeMax", endOfDay.toISOString());
-  url.searchParams.set("singleEvents", "true");
-  url.searchParams.set("orderBy", "startTime");
-  url.searchParams.set("maxResults", "25");
-
-  const res = await fetch(url.toString(), {
-    headers: { Authorization: `Bearer ${accessToken}` },
-  });
-
-  const data = (await res.json()) as GCalListResponse;
-  if (!res.ok) {
-    const msg = data.error?.message || `Calendar API error (${res.status})`;
-    throw new Error(msg);
+  const calendars = await listPersonalCalendars(accessToken);
+  if (calendars.length === 0) {
+    return null;
   }
 
-  return pickScheduleBubble(data.items ?? []);
+  const eventLists = await Promise.all(
+    calendars.map((cal) => fetchEventsForDay(accessToken, cal.id!, startOfDay, endOfDay))
+  );
+  const allEvents = eventLists.flat();
+
+  return pickCurrentEvent(allEvents, now);
 }

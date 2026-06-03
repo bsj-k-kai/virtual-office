@@ -2,13 +2,18 @@ import type { UserState } from "./types.js";
 
 const BOT_COLORS = ["#6366f1", "#ec4899", "#22c55e", "#f97316", "#06b6d4"];
 
+/** フロアプラン（1400×900）上のホーム位置 */
 const BOT_DEFS = [
-  { name: "田中 太郎", x: 170, y: 150, status: "available" as const },
-  { name: "鈴木 花子", x: 370, y: 150, status: "available" as const },
-  { name: "佐藤 健太", x: 570, y: 150, status: "busy" as const },
-  { name: "山田 美咲", x: 370, y: 350, status: "available" as const },
-  { name: "伊藤 大輔", x: 220, y: 600, status: "away" as const },
+  { name: "田中 太郎", x: 247, y: 108, status: "available" as const },
+  { name: "鈴木 花子", x: 560, y: 400, status: "available" as const },
+  { name: "佐藤 健太", x: 377, y: 108, status: "busy" as const },
+  { name: "山田 美咲", x: 120, y: 540, status: "available" as const },
+  { name: "伊藤 大輔", x: 1198, y: 400, status: "away" as const },
 ];
+
+const MAP_MIN = 36;
+const MAP_MAX_X = 1364;
+const MAP_MAX_Y = 864;
 
 interface BotRuntime {
   user: UserState;
@@ -25,8 +30,8 @@ function randomIn(min: number, max: number) {
 
 function pickWanderTarget(homeX: number, homeY: number) {
   return {
-    x: Math.max(60, Math.min(1140, homeX + randomIn(-80, 80))),
-    y: Math.max(60, Math.min(740, homeY + randomIn(-60, 60))),
+    x: Math.max(MAP_MIN, Math.min(MAP_MAX_X, homeX + randomIn(-100, 100))),
+    y: Math.max(MAP_MIN, Math.min(MAP_MAX_Y, homeY + randomIn(-80, 80))),
   };
 }
 

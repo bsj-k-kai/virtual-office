@@ -3,7 +3,7 @@ export type UserStatus = "available" | "busy" | "away";
 export interface ScheduleInfo {
   label: string;
   detail?: string;
-  kind: "now" | "next";
+  kind: "now";
 }
 
 export interface UserState {

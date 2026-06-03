@@ -151,8 +151,8 @@ io.on("connection", (socket) => {
       color: colorFromEmail(authUser.email),
       email: authUser.email,
       picture: authUser.picture,
-      x: data?.x ?? 400,
-      y: data?.y ?? 300,
+      x: data?.x ?? 720,
+      y: data?.y ?? 480,
       status: "available",
     };
     users.set(socket.id, user);
@@ -164,8 +164,8 @@ io.on("connection", (socket) => {
   socket.on("move", (pos: { x: number; y: number }) => {
     const user = users.get(socket.id);
     if (!user) return;
-    user.x = Math.max(40, Math.min(1160, pos.x));
-    user.y = Math.max(40, Math.min(760, pos.y));
+    user.x = Math.max(36, Math.min(1364, pos.x));
+    user.y = Math.max(36, Math.min(864, pos.y));
     users.set(socket.id, user);
     socket.to("office").emit("user-moved", { id: socket.id, x: user.x, y: user.y });
   });

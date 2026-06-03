@@ -3,7 +3,7 @@ export type UserStatus = "available" | "busy" | "away";
 export interface ScheduleInfo {
   label: string;
   detail?: string;
-  kind: "now" | "next";
+  kind: "now";
 }
 
 export interface User {
@@ -25,8 +25,8 @@ export interface AuthUser {
   picture?: string;
 }
 
-export const MAP_WIDTH = 1200;
-export const MAP_HEIGHT = 800;
+export const MAP_WIDTH = 1400;
+export const MAP_HEIGHT = 900;
 export const PROXIMITY_RADIUS = 120;
 export const AVATAR_SIZE = 36;
 

@@ -8,6 +8,8 @@ import {
   STATUS_LABELS,
 } from "../types";
 import { MicVolumeControl } from "./MicVolumeControl";
+import { OfficeFloorPlan } from "./OfficeFloorPlan";
+import { MAP_PADDING } from "./OfficeFloorPlan";
 
 function distance(a: { x: number; y: number }, b: { x: number; y: number }) {
   return Math.hypot(a.x - b.x, a.y - b.y);
@@ -27,20 +29,6 @@ interface OfficeMapProps {
   calendarLinked?: boolean;
   onCalendarSync?: () => void;
 }
-
-const DESKS = [
-  { x: 120, y: 120, w: 100, h: 60, label: "デスク A" },
-  { x: 320, y: 120, w: 100, h: 60, label: "デスク B" },
-  { x: 520, y: 120, w: 100, h: 60, label: "デスク C" },
-  { x: 720, y: 120, w: 100, h: 60, label: "デスク D" },
-  { x: 120, y: 320, w: 100, h: 60, label: "デスク E" },
-  { x: 320, y: 320, w: 100, h: 60, label: "デスク F" },
-  { x: 520, y: 320, w: 100, h: 60, label: "デスク G" },
-  { x: 720, y: 320, w: 100, h: 60, label: "デスク H" },
-];
-
-const MEETING_ROOM = { x: 900, y: 480, w: 240, h: 200, label: "会議室" };
-const LOUNGE = { x: 80, y: 520, w: 280, h: 200, label: "ラウンジ" };
 
 const SPEED = 4;
 const KEYS = new Set(["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "w", "a", "s", "d", "W", "A", "S", "D"]);
@@ -79,8 +67,8 @@ export function OfficeMap({
     if (keys.has("ArrowLeft") || keys.has("a") || keys.has("A")) x -= SPEED;
     if (keys.has("ArrowRight") || keys.has("d") || keys.has("D")) x += SPEED;
 
-    x = Math.max(AVATAR_SIZE, Math.min(MAP_WIDTH - AVATAR_SIZE, x));
-    y = Math.max(AVATAR_SIZE, Math.min(MAP_HEIGHT - AVATAR_SIZE, y));
+    x = Math.max(MAP_PADDING, Math.min(MAP_WIDTH - MAP_PADDING, x));
+    y = Math.max(MAP_PADDING, Math.min(MAP_HEIGHT - MAP_PADDING, y));
 
     if (x !== posRef.current.x || y !== posRef.current.y) {
       posRef.current = { x, y };
@@ -151,21 +139,21 @@ export function OfficeMap({
 
         {onCalendarSync && (
           <div className="calendar-panel">
-            <h3>📅 今日の予定</h3>
+            <h3>📅 今の予定</h3>
             {me.schedule ? (
               <p className="calendar-preview">
-                <span className={`calendar-kind calendar-kind-${me.schedule.kind}`}>
-                  {me.schedule.kind === "now" ? "進行中" : "次の予定"}
-                </span>
+                <span className="calendar-kind calendar-kind-now">参加中</span>
                 {me.schedule.label}
                 {me.schedule.detail && (
                   <span className="calendar-detail">{me.schedule.detail}</span>
                 )}
               </p>
             ) : calendarLinked ? (
-              <p className="calendar-empty">本日の予定はありません</p>
+              <p className="calendar-empty">今は予定に入っていません（勤務用カレンダーは除く）</p>
             ) : (
-              <p className="calendar-empty">カレンダーと連携すると吹き出しに表示されます</p>
+              <p className="calendar-empty">
+                個人用カレンダーで、いま参加中の予定だけ吹き出しに表示します
+              </p>
             )}
             {calendarError && <p className="calendar-error">{calendarError}</p>}
             <button type="button" className="calendar-sync-btn" onClick={onCalendarSync}>
@@ -217,41 +205,7 @@ export function OfficeMap({
           role="img"
           aria-label="バーチャルオフィスマップ"
         >
-          <defs>
-            <pattern id="floor" width="40" height="40" patternUnits="userSpaceOnUse">
-              <rect width="40" height="40" fill="#f1f5f9" />
-              <rect width="40" height="40" fill="none" stroke="#e2e8f0" strokeWidth="0.5" />
-            </pattern>
-          </defs>
-          <rect width={MAP_WIDTH} height={MAP_HEIGHT} fill="url(#floor)" />
-          <rect x="0" y="0" width={MAP_WIDTH} height="8" fill="#94a3b8" />
-          <rect x="0" y={MAP_HEIGHT - 8} width={MAP_WIDTH} height="8" fill="#94a3b8" />
-          <rect x="0" y="0" width="8" height={MAP_HEIGHT} fill="#94a3b8" />
-          <rect x={MAP_WIDTH - 8} y="0" width="8" height={MAP_HEIGHT} fill="#94a3b8" />
-
-          {DESKS.map((d) => (
-            <g key={d.label}>
-              <rect x={d.x} y={d.y} width={d.w} height={d.h} rx="6" fill="#cbd5e1" stroke="#94a3b8" />
-              <rect x={d.x + 30} y={d.y + 10} width="40" height="30" rx="4" fill="#64748b" />
-              <text x={d.x + d.w / 2} y={d.y + d.h + 16} textAnchor="middle" fontSize="11" fill="#64748b">
-                {d.label}
-              </text>
-            </g>
-          ))}
-
-          <g>
-            <rect x={MEETING_ROOM.x} y={MEETING_ROOM.y} width={MEETING_ROOM.w} height={MEETING_ROOM.h} rx="8" fill="#ddd6fe" stroke="#a78bfa" strokeWidth="2" />
-            <text x={MEETING_ROOM.x + MEETING_ROOM.w / 2} y={MEETING_ROOM.y + 30} textAnchor="middle" fontSize="14" fontWeight="600" fill="#6d28d9">
-              {MEETING_ROOM.label}
-            </text>
-          </g>
-
-          <g>
-            <rect x={LOUNGE.x} y={LOUNGE.y} width={LOUNGE.w} height={LOUNGE.h} rx="8" fill="#bbf7d0" stroke="#4ade80" strokeWidth="2" />
-            <text x={LOUNGE.x + LOUNGE.w / 2} y={LOUNGE.y + 30} textAnchor="middle" fontSize="14" fontWeight="600" fill="#15803d">
-              {LOUNGE.label}
-            </text>
-          </g>
+          <OfficeFloorPlan />
 
           {/* Proximity ring for me */}
           <circle
@@ -287,7 +241,7 @@ function ScheduleBubbleView({ schedule, avatarR }: { schedule: ScheduleInfo; ava
   const w = 148;
   const h = schedule.detail ? 42 : 30;
   const top = -(avatarR + h + 12);
-  const stroke = schedule.kind === "now" ? "#6366f1" : "#cbd5e1";
+  const stroke = "#6366f1";
 
   return (
     <g transform={`translate(0, ${top})`} pointerEvents="none">
@@ -299,7 +253,7 @@ function ScheduleBubbleView({ schedule, avatarR }: { schedule: ScheduleInfo; ava
         rx={10}
         fill="#ffffff"
         stroke={stroke}
-        strokeWidth={schedule.kind === "now" ? 2 : 1.5}
+        strokeWidth={2}
       />
       <text
         y={schedule.detail ? -24 : -17}

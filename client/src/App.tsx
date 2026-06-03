@@ -5,7 +5,7 @@ import { useDemoBotAudio } from "./hooks/useDemoBotAudio";
 import { useMyPositionRef } from "./hooks/useMyPositionRef";
 import { useMicVolume } from "./hooks/useMicVolume";
 import { useAuth } from "./hooks/useAuth";
-import { useCalendarSync } from "./hooks/useCalendarSync";
+import { useCalendarSync, clearCalendarAccessToken } from "./hooks/useCalendarSync";
 import { LoginScreen } from "./components/LoginScreen";
 import { OfficeMap } from "./components/OfficeMap";
 import "./App.css";
@@ -76,7 +76,7 @@ function OfficeApp({
         onStatusChange={setStatus}
         calendarError={calendarError}
         calendarLinked={calendarLinked}
-        onCalendarSync={() => syncCalendar(true)}
+        onCalendarSync={syncCalendar}
       />
     </div>
   );
@@ -106,6 +106,7 @@ function App() {
   };
 
   const handleLogout = async () => {
+    clearCalendarAccessToken();
     await logout();
   };
 
